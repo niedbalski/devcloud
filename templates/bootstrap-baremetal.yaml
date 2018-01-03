@@ -13,19 +13,19 @@ machines:
         nics:
           eth0:
             mac: "14:58:d0:58:36:xx"
-            network: "control"
+            network: "control-network"
             ipv4: 10.X.X.X
       r1-m1-c07xx:
         nics:
           eth0:
             mac: "14:58:d0:58:c5:xx"
-            network: "control"
+            network: "control-network"
             ipv4: 10.X.X.X
       r1-m1-c12xx:
         nics:
           eth0:
             mac: "14:58:d0:58:b5:xx"
-            network: "control"
+            network: "control-network"
             ipv4: 10.X.X.X
   generic:
     kernel: hrw/linux.77588dde
@@ -36,17 +36,17 @@ machines:
         nics:
           eth0:
             mac: "14:58:d0:58:35:xx"
-            network: "control"
+            network: "control-network"
             ipv4: 10.X.X.X
       r1-m1-c18xx:
         nics:
           eth0:
             mac: "14:58:d0:58:82:xx"
-            network: "control"
+            network: "control-network"
             ipv4: 10.X.X.X
       r1-m1-c19xx:
         nics:
           eth0:
             mac: "14:58:d0:58:82:xx"
-            network: "control"
+            network: "control-network"
             ipv4: 10.X.X.X
