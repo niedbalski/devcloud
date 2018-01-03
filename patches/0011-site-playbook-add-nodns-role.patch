@@ -1,0 +1,17 @@
+diff --git a/ansible/site.yml b/ansible/site.yml
+index 025b82e..461f2e0 100644
+--- a/ansible/site.yml
++++ b/ansible/site.yml
+@@ -7,6 +7,12 @@
+ 
+ # Make sure monitoring agent and time agent are in all servers
+ #
++- name: Configure /etc/hosts in the absense of DNS
++  hosts: all
++  become: yes
++  roles:
++    - {role: nodns, tags: [nodns]}
++
+ - name: Configure ntp
+   hosts: all
+   become: yes

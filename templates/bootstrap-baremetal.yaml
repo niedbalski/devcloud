@@ -1,0 +1,52 @@
+provisioner:
+  url: "http://xxxx:5000"
+  token: "xxxx"
+  version: 1
+
+machines:
+  compute:
+    kernel: hrw/linux.77588dde
+    initrd: hrw/initrd.gz.36c31d82
+    preseed: moonshot-os-compute-cephosd
+    names:
+      r1-m1-c05xx:
+        nics:
+          eth0:
+            mac: "14:58:d0:58:36:xx"
+            network: "control"
+            ipv4: 10.X.X.X
+      r1-m1-c07xx:
+        nics:
+          eth0:
+            mac: "14:58:d0:58:c5:xx"
+            network: "control"
+            ipv4: 10.X.X.X
+      r1-m1-c12xx:
+        nics:
+          eth0:
+            mac: "14:58:d0:58:b5:xx"
+            network: "control"
+            ipv4: 10.X.X.X
+  generic:
+    kernel: hrw/linux.77588dde
+    initrd: hrw/initrd.gz.36c31d82
+    preseed: moonshot-os-generic
+    names:
+      r1-m1-c06xx:
+        nics:
+          eth0:
+            mac: "14:58:d0:58:35:xx"
+            network: "control"
+            ipv4: 10.X.X.X
+      r1-m1-c18xx:
+        nics:
+          eth0:
+            mac: "14:58:d0:58:82:xx"
+            network: "control"
+            ipv4: 10.X.X.X
+      r1-m1-c19xx:
+        nics:
+          eth0:
+            mac: "14:58:d0:58:82:xx"
+            network: "control"
+            ipv4: 10.X.X.X

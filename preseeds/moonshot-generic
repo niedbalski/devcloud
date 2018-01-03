@@ -1,0 +1,96 @@
+# Localization
+d-i debian-installer/locale string en_US
+d-i keyboard-configuration/xkb-keymap select us
+
+# Network configuration
+d-i netcfg/choose_interface select auto
+
+# Mirror settings
+d-i mirror/country string US
+d-i mirror/http/hostname string deb.debian.org # Debian CDN
+d-i mirror/http/directory string /debian
+d-i mirror/http/proxy string
+
+# Account setup
+d-i passwd/root-password password root
+d-i passwd/root-password-again password root
+d-i passwd/user-fullname string linaro
+d-i passwd/username string linaro
+d-i passwd/user-password password linaro
+d-i passwd/user-password-again password linaro
+d-i passwd/user-default-groups linaro sudo
+
+# Clock and time zone setup
+d-i clock-setup/utc boolean true
+d-i time/zone string GMT
+d-i clock-setup/ntp boolean true
+d-i clock-setup/ntp-server string pool.ntp.org
+
+# Use LVM for partitioning.
+
+d-i partman-auto/disk string /dev/sda
+d-i partman-auto/method string regular
+d-i partman-lvm/device_remove_lvm boolean true
+d-i partman-md/device_remove_md boolean true
+d-i partman/confirm_write_new_label boolean true
+d-i partman/choose_partition select finish
+d-i partman/confirm boolean true
+d-i partman-basicmethods/method_only boolean false
+d-i partman/confirm_nooverwrite boolean true
+
+d-i partman-basicfilesystems/no_swap boolean false
+d-i partman-xfs/no_mount_point boolean false
+d-i partman-basicfilesystems/no_mount_point boolean false
+
+# Partitioning Schema
+#
+# 1. BIOS boot partition
+# 2. LVM, with the following logical volumes
+#     - Root partition: 45 GB (45000 MB), ext4.
+#     - Swap: 50% of RAM
+#     - Ceph partition: remaining space, XFS
+d-i partman-auto/expert_recipe string                         \
+      root ::                                            \
+	      512 512 512 vfat \
+			$primary{ }  \
+			format{ } \
+			filesystem{ vfat } \
+			method{ efi } \
+			mountpoint{ /boot/efi } \
+              .                                               \
+              10% 2048 10% linux-swap                       \
+                      lv_name{ swap }                         \
+                      method{ swap } format{ }                \
+                      $lvmok{ }                               \
+              .                                               \
+              45000 45000 100% ext4                       \
+                      lv_name{ root }                         \
+                      method{ lvm } format{ }                 \
+                      use_filesystem{ } filesystem{ ext4 }    \
+                      mountpoint{ / }                         \
+                      label{ root }                           \
+                      $lvmok{ }                               \
+              .
+              
+d-i partman-auto/choose_recipe select root
+
+# Package selection
+tasksel tasksel/first multiselect standard
+d-i pkgsel/include string openssh-server sudo
+d-i pkgsel/upgrade select none
+
+popularity-contest popularity-contest/participate boolean false
+
+# Late stage commands
+d-i preseed/late_command string in-target mkdir -p /home/linaro/.ssh; \
+{%for key in ssh_keys%}in-target /bin/sh -c "echo '{{key}}' >> /home/linaro/.ssh/authorized_keys"; \{%endfor%}
+in-target chown -R linaro:linaro /home/linaro/.ssh/; \
+{%for interface in interfaces%}
+{%if interface.name == "control-network"%}
+in-target /bin/sh -c "echo 'auto eth0\niface eth0 inet static\naddress {{interface.static_ipv4}}\nnetmask {{interface.netmask}}\ngateway 10.101.0.254' >> /etc/network/interfaces.d/eth0.cfg"; \{%endif%}{%endfor%}
+in-target /bin/sh -c "sed -i '/eth0/d' /etc/network/interfaces || true"; \
+in-target /bin/sh -c "sed -i '/eth1/d' /etc/network/interfaces || true"; \
+in-target /bin/sh -c "echo 'linaro ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers.d/linaro";
+
+# Misc options
+d-i finish-install/reboot_in_progress note

@@ -1,0 +1,47 @@
+Changes:
+* Removed the each pool creation task in favor of a single task named 'Create
+Pools for OpenStack'
+* Added the 'Calculate PGs per pool' task that calculates the number of PGs
+to be used based on the pool size.
+
+Patch-Author: Jorge Niedbalski <jorge.niedbalski@linaro.org>
+
+--
+diff --git a/ansible/roles/ceph-bootstrap/tasks/configure_mon.yml b/ansible/roles/ceph-bootstrap/tasks/configure_mon.yml
+index 97a80f1..29dd549 100644
+--- a/ansible/roles/ceph-bootstrap/tasks/configure_mon.yml
++++ b/ansible/roles/ceph-bootstrap/tasks/configure_mon.yml
+@@ -1,19 +1,22 @@
+ - name: Find pools defined
+   command: ceph osd pool ls
+   register: ceph_pools
+-  changed_when: false
++  changed_when: true
+ 
+-- name: Define Images pool for OpenStack
+-  when: (ceph_pools is defined and 'images' not in ceph_pools.stdout_lines)
+-  command: ceph osd pool create images 64
++- name: Calculate PGs per pool
++  set_fact:
++    ceph_pgs_per_pool: "{{((groups['ceph_osd_servers'] | count * 100 / ceph_replication_count | int) / 3) | int}}"
++  when: ceph_pools is defined
+ 
+-- name: Define VMS pool for OpenStack
+-  when: (ceph_pools is defined and 'vms' not in ceph_pools.stdout_lines)
+-  command: ceph osd pool create vms 128
+-
+-- name: Define Volumes pool for OpenStack
+-  when: (ceph_pools is defined and 'volumes' not in ceph_pools.stdout_lines)
+-  command: ceph osd pool create volumes 64
++- name: Create Pools for OpenStack
++  when: (ceph_pgs_per_pool is defined and item not in ceph_pools.stdout_lines)
++  shell: |
++    ceph osd pool delete {{item}} {{item}} --yes-i-really-really-mean-it
++    ceph osd pool create {{item}} {{ceph_pgs_per_pool}} {{ceph_pgs_per_pool}}
++  items:
++    - images
++    - vms
++    - volumes
+ 
+ - name: Define users
+   include: user.yml user={{item}}

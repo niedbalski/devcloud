@@ -1,0 +1,84 @@
+Changes:
+
+* Use inventory_hostname instead of ansible_fqdn for ceph mons, memcached_servers
+and all the _host variables
+
+* Change the variable ceph_host_osds to use the /data partition as there are no other available
+physical disks on the moonshot cartridges.
+
+* Change the variable swift_partition to use the /data as no block device
+is available.
+
+* Change the network_external_iface variable from eth2 (as per the reference architecture)
+to use eth0.
+
+Patch-Author: Jorge Niedbalski <jorge.niedbalski@linaro.org>
+
+--
+diff --git a/ansible/group_vars/all b/ansible/group_vars/all
+index 0967801..39fde44 100644
+--- a/ansible/group_vars/all
++++ b/ansible/group_vars/all
+@@ -24,36 +24,34 @@ swift_pkg: erp-swift-services
+ pkg_policy: present
+ 
+ # Ceph needs an odd number of MONs. 3 is a good number for a small/mid-sized deployment
+-ceph_mons: "{% for host in groups['ceph_monitor_servers'] %}{{ hostvars[host]['ansible_fqdn'] }}{% if not loop.last %}, {% endif %}{% endfor %}"
+-ceph_mon_initial_members: "{% for host in groups['ceph_monitor_servers'] %}{{ hostvars[host]['ansible_hostname'] }}{% if not loop.last %}, {% endif %}{% endfor %}"
++ceph_mons: "{% for host in groups['ceph_monitor_servers'] %}{{ hostvars[host].inventory_hostname }}{% if not loop.last %}, {% endif %}{% endfor %}"
++ceph_mon_initial_members: "{% for host in groups['ceph_monitor_servers'] %}{{ hostvars[host].inventory_hostname }}{% if not loop.last %}, {% endif %}{% endfor %}"
+ 
+ ceph_host_osds:
+-  - sdb
+-  - sdc
+-  - sdd
++  - /data
+ 
+ # the network interface for compute and network nodes to handle tenant networking
+ tunnel_interface: eth1
+ network_tunnel_ip: "192.168.0.{{ansible_default_ipv4.address.split('.')[3]}}"
+ 
+ # the network node's interface connected to public internet
+-network_external_iface: eth2
+-
+-keystone_host: "{{ hostvars[groups['keystone_servers'][0]]['ansible_fqdn'] }}"
+-glance_host: "{{ hostvars[groups['glance_servers'][0]]['ansible_fqdn'] }}"
+-nova_host: "{{ hostvars[groups['nova_servers'][0]]['ansible_fqdn'] }}"
+-neutron_host: "{{ hostvars[groups['neutron_servers'][0]]['ansible_fqdn'] }}"
+-horizon_host: "{{ hostvars[groups['horizon_servers'][0]]['ansible_fqdn'] }}"
+-cinder_host: "{{ hostvars[groups['cinder_servers'][0]]['ansible_fqdn'] }}"
+-heat_host: "{{ hostvars[groups['heat_servers'][0]]['ansible_fqdn'] }}"
+-mysql_host: "{{ hostvars[groups['mysql_servers'][0]]['ansible_fqdn'] }}"
+-rabbit_host: "{{ hostvars[groups['rabbit_servers'][0]]['ansible_fqdn'] }}"
+-rgw_host: "{{ hostvars[groups['rgw_servers'][0]]['ansible_fqdn'] }}"
+-swift_host: "{{ hostvars[groups['swift_servers'][0]]['ansible_fqdn'] }}"
++network_external_iface: eth0
++
++keystone_host: "{{ hostvars[groups['keystone_servers'][0]].inventory_hostname }}"
++glance_host: "{{ hostvars[groups['glance_servers'][0]].inventory_hostname }}"
++nova_host: "{{ hostvars[groups['nova_servers'][0]].inventory_hostname }}"
++neutron_host: "{{ hostvars[groups['neutron_servers'][0]].inventory_hostname }}"
++horizon_host: "{{ hostvars[groups['horizon_servers'][0]].inventory_hostname }}"
++cinder_host: "{{ hostvars[groups['cinder_servers'][0]].inventory_hostname }}"
++heat_host: "{{ hostvars[groups['heat_servers'][0]].inventory_hostname }}"
++mysql_host: "{{ hostvars[groups['mysql_servers'][0]].inventory_hostname }}"
++rabbit_host: "{{ hostvars[groups['rabbit_servers'][0]].inventory_hostname }}"
++rgw_host: "{{ hostvars[groups['rgw_servers'][0]].inventory_hostname }}"
++swift_host: "{{ hostvars[groups['swift_servers'][0]].inventory_hostname }}"
+ 
+ #WARNING: all existing data in swift partition will be destroyed!
+ swift_partition:
+-  - sdb1
++  - /data
+ 
+ swift_object_ring_uri: "z1-{{ansible_default_ipv4.address}}:6200"
+ swift_container_ring_uri: "z1-{{ansible_default_ipv4.address}}:6201"
+@@ -75,7 +73,7 @@ swift_debug_logging: "{{openstack_debug_logging}}"
+ 
+ ## Memcached option
+ memcached_port: 11211
+-memcached_servers: "{% for host in groups['memcache_servers'] %}{{ hostvars[host]['ansible_fqdn'] }}:{{ memcached_port }}{% if not loop.last %},{% endif %}{% endfor %}"
++memcached_servers: "{% for host in groups['memcache_servers'] %}{{ hostvars[host].inventory_hostname }}:{{ memcached_port }}{% if not loop.last %},{% endif %}{% endfor %}"
+ 
+ 
+ # If you want to expose your openstack endpoints to the public, you can override this

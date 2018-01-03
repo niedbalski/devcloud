@@ -1,0 +1,30 @@
+diff --git a/ansible/roles/nodns/tasks/main.yml b/ansible/roles/nodns/tasks/main.yml
+new file mode 100644
+index 0000000..f0f5514
+--- /dev/null
++++ b/ansible/roles/nodns/tasks/main.yml
+@@ -0,0 +1,24 @@
++- name: Setup hostname to ansible inventory name.
++  hostname:
++    name: "{{inventory_hostname}}"
++
++- name: Point 127.0.0.1 to inventory name on /etc/hosts.
++  lineinfile:
++    dest: /etc/hosts
++    regexp: '^127\.0\.0\.1[ \t]+localhost'
++    line: '127.0.0.1 localhost {{inventory_hostname}}'
++    state: present
++
++- name: Point 127.0.1.1 to inventory name on /etc/hosts.
++  lineinfile:
++    dest: /etc/hosts
++    regexp: '^127\.0\.1\.1[ \t]+[a-zA-Z]+[\n]+'
++    line: '127.0.1.1 {{inventory_hostname}}'
++    state: present
++
++- name: Add IP address of all hosts to all hosts
++  lineinfile:
++    dest: /etc/hosts
++    line: "{{ hostvars[item].ansible_default_ipv4.address }} {{ hostvars[item].inventory_hostname }} {{ hostvars[item].inventory_hostname_short }}"
++    state: present
++  with_items: "{{ groups.all }}"

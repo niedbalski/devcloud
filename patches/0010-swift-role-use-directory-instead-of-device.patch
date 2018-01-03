@@ -1,0 +1,32 @@
+diff --git a/ansible/roles/swift/tasks/main.yml b/ansible/roles/swift/tasks/main.yml
+index 0cbc240..789de7b 100644
+--- a/ansible/roles/swift/tasks/main.yml
++++ b/ansible/roles/swift/tasks/main.yml
+@@ -48,7 +48,7 @@
+   with_items: "{{swift_partition}}"
+   mount:
+     name: /srv/node/{{item}}
+-    src: /dev/{{item}}
++    src: "{{item}}"
+     fstype: xfs
+     opts: noatime,nodiratime,nobarrier,logbufs=8
+     state: mounted
+diff --git a/ansible/roles/swift/tasks/part.yml b/ansible/roles/swift/tasks/part.yml
+index 73ee9c0..120b352 100644
+--- a/ansible/roles/swift/tasks/part.yml
++++ b/ansible/roles/swift/tasks/part.yml
+@@ -1,5 +1,5 @@
+ - name: Check if swift partition is prepared
+-  shell: /sbin/blkid /dev/{{item}} | grep 'TYPE="xfs"'
++  shell: /sbin/blkid {{item}} | grep 'TYPE="xfs"'
+   ignore_errors: true
+   changed_when: false
+   register: swift_part_prepared
+@@ -8,6 +8,6 @@
+   when: (swift_part_prepared.rc != 0) or swift_force_prepare
+   filesystem:
+     fstype: xfs
+-    dev: /dev/{{item}}
++    dev: "{{item}}"
+     force: yes
+   ignore_errors: true

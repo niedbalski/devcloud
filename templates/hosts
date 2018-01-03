@@ -1,0 +1,9 @@
+127.0.0.1	localhost
+
+10.X.X.X control-node0 #r1-m1-xxxx 
+10.X.X.X network-node0 #r1-m1-xxxx
+10.X.X.X database-node0 #r1-m1-xxxx
+
+10.X.X.X compute-osd-node0 #r1-m1-xxxx
+10.X.X.X compute-osd-node1 #r1-m1-xxxx
+10.X.X.X compute-osd-node2 #r1-m1-xxxx

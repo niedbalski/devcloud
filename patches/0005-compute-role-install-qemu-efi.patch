@@ -1,0 +1,61 @@
+Changes
+
+* Install qemu-efi packages from linaro overlay
+* Add a debug task for showing the virsh/ceph secrets while deploying
+
+Patch-Author: Jorge Niedbalski <jorge.niedbalski@linaro.org>
+
+diff --git a/ansible/roles/compute/tasks/main.yml b/ansible/roles/compute/tasks/main.yml
+index f9cf8b2..9ae0c3a 100644
+--- a/ansible/roles/compute/tasks/main.yml
++++ b/ansible/roles/compute/tasks/main.yml
+@@ -1,5 +1,32 @@
+ - include_vars: "{{ansible_os_family}}.yml"
+ 
++# Install qemu-efi firmware packages
++
++- name: Add linaro-overlay keys
++  apt_key:
++    url: http://repo.linaro.org/ubuntu/linarorepo.key
++    state: present
++
++- name: Add linaro-overlay repository
++  apt_repository:
++    repo: deb http://repo.linaro.org/ubuntu/linaro-overlay jessie main
++    state: present
++    filename: 'linaro-overlay'
++    update_cache: yes
++
++- name: Install qemu-efi firmware
++  apt:
++    name: qemu-efi
++    state: latest
++
++- name: Remove linaro-overlay repository
++  apt_repository:
++    repo: deb http://repo.linaro.org/ubuntu/linaro-overlay jessie main
++    state: absent
++    filename: 'linaro-overlay'
++    update_cache: yes
++
++
+ - include: roles/common/deploy_pkg.yml pkg_name={{nova_compute_pkg}}
+ - include: roles/common/deploy_pkg.yml pkg_name={{neutron_compute_pkg}}
+ 
+diff --git a/ansible/roles/compute/tasks/virsh-secret.yml b/ansible/roles/compute/tasks/virsh-secret.yml
+index 571a0c8..21fe99a 100644
+--- a/ansible/roles/compute/tasks/virsh-secret.yml
++++ b/ansible/roles/compute/tasks/virsh-secret.yml
+@@ -26,7 +26,11 @@
+   ignore_errors: yes
+   register: virsh_secret
+ 
++- name: Debug virsh secret
++  debug:
++      msg: "{{virsh_secret}} {{ceph_secret}}"
++
+ - name: Update the secret
+   when: "virsh_secret is defined and ceph_secret is defined
+-         and '{{virsh_secret.stdout}}' != '{{ceph_secret.stdout}}'"
++         and '{{virsh_secret['stdout']}}' != '{{ceph_secret['stdout']}}'"
+   command: virsh secret-set-value --secret {{virsh_uuid}} --base64 {{ceph_secret.stdout}}

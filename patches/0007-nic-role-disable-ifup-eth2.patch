@@ -1,0 +1,27 @@
+diff --git a/ansible/roles/nics/tasks/main.yml b/ansible/roles/nics/tasks/main.yml
+index 5d2f2fa..0907566 100644
+--- a/ansible/roles/nics/tasks/main.yml
++++ b/ansible/roles/nics/tasks/main.yml
+@@ -4,15 +4,15 @@
+   template: src={{projects_nic.src}} dest={{projects_nic.dest}} mode=0444
+   register: projects_net
+ 
+-- name: Setup ext nic
+-  when: inventory_hostname in groups['networking_servers']
+-  template: src={{ext_nic.src}} dest={{ext_nic.dest}} mode=0444
+-  register: ext_net
++#- name: Setup ext nic
++#  when: inventory_hostname in groups['networking_servers']
++#  template: src={{ext_nic.src}} dest={{ext_nic.dest}} mode=0444
++#  register: ext_net
+ 
+ - name: Bring up tunnel interface
+   when: projects_net.changed
+   command: ifup {{tunnel_interface}}
+ 
+-- name: Bring up public interface
+-  when: ext_net.changed
+-  command: ifup {{network_external_iface}}
++#- name: Bring up public interface
++#  when: ext_net.changed
++#  command: ifup {{network_external_iface}}

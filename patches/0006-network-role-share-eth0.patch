@@ -1,0 +1,82 @@
+diff --git a/ansible/roles/network/handlers/main.yml b/ansible/roles/network/handlers/main.yml
+index 6df8f51..596f2ce 100644
+--- a/ansible/roles/network/handlers/main.yml
++++ b/ansible/roles/network/handlers/main.yml
+@@ -5,3 +5,4 @@
+     - erp-neutron-dhcp-agent
+     - erp-neutron-metadata-agent
+     - erp-neutron-openvswitch-agent
++    - pub-br
+diff --git a/ansible/roles/network/tasks/main.yml b/ansible/roles/network/tasks/main.yml
+index 33d13bf..addf9fb 100644
+--- a/ansible/roles/network/tasks/main.yml
++++ b/ansible/roles/network/tasks/main.yml
+@@ -22,7 +22,7 @@
+ 
+ - name: Add external interface to the bridge
+   when: "bridge_ports is defined and '{{network_external_iface}}' not in bridge_ports.stdout"
+-  command: ovs-vsctl add-port br-ex {{network_external_iface}}
++  shell: IP=$(ip addr show dev {{network_external_iface}} | grep ' inet ' | awk '{print $2}') && ip link set dev br-ex up && ovs-vsctl add-port br-ex {{network_external_iface}} && ip addr del $IP dev {{network_external_iface}} && ip addr add $IP dev br-ex && ip route replace default via {{ansible_default_ipv4.gateway}} dev br-ex
+ 
+ - name: Configure neutron.conf
+   template: src=roles/neutron/templates/neutron.conf dest=/etc/neutron/neutron.conf
+@@ -44,6 +44,9 @@
+   template: src=metadata_agent.ini dest=/etc/neutron/
+   notify: restart-network-service
+ 
++- name: Configure pub-br
++  template: src=pub-br dest=/etc/init.d/ mode=0755
++
+ - name: Ensure the network daemons are enabled
+   service: name={{item}} enabled=yes state=started
+   with_items:
+@@ -51,3 +54,4 @@
+     - erp-neutron-l3-agent
+     - erp-neutron-metadata-agent
+     - erp-neutron-openvswitch-agent
++    - pub-br
+diff --git a/ansible/roles/network/templates/pub-br b/ansible/roles/network/templates/pub-br
+new file mode 100644
+index 0000000..0ac42f0
+--- /dev/null
++++ b/ansible/roles/network/templates/pub-br
+@@ -0,0 +1,39 @@
++#! /bin/sh
++#
++### BEGIN INIT INFO
++# Provides:          eth0-brex
++# Required-Start:    $network $openvswitch-switch
++# Required-Stop:     $remote_fs
++# Default-Start:     2 3 4 5
++# Default-Stop:      0 1 6
++# Short-Description: eth0-brex
++# Description:       eth0-brex
++### END INIT INFO
++
++# Ugly hack to workaroud public eth sharing with br-ex
++
++[ "$1" = "start" ] || exit 0
++
++IP=$(ip addr show dev eth0 | grep ' inet ' | awk '{print $2}')
++[ "$IP"xxx = xxx ] && exit 0
++
++GW=$(ip route | grep '^default' | cut -f3 -d' ')
++
++i=1
++while [ $i -lt 10 ]
++do
++  ovs-vsctl br-exists br-ex
++  [ $? = 0 ] && { i=0; break; }
++  sleep 1
++  i=$((i + 1))
++done
++[ $i = 0 ] || exit 1
++
++sleep 3
++
++ip link set dev br-ex up
++ip addr del $IP dev eth0
++ip addr add $IP dev br-ex
++ip route replace default via $GW dev br-ex
++
++exit 0
