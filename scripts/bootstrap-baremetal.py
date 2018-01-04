@@ -72,10 +72,13 @@ class Machine(object):
         preseed = self.get_preseed_by_name(
             self.extended.get("preseed")).get('id')
 
+        kernel_opts = self.extended.get("kernel_opts", "")
+
         request = self.bootstrap.do_put_request(
             "machine/{0}".format(self._id), {
                 "initrd_id": initrd,
                 "kernel_id": kernel,
+                "kernel_opts": kernel_opts,
                 "preseed_id": preseed,
                 "netboot_enabled": True,
             })
