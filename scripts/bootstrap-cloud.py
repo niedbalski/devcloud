@@ -13,16 +13,29 @@ def create_resources(config):
     domain_id = cloud.get_domain('default').id
     project_id = cloud.get_project('service').id
 
-    user = cloud.create_user(name='demo', domain_id=domain_id, password='pass')
+    user = cloud.get_user('demo')
+    if not user:
+        user = cloud.create_user(name='demo',
+                                 domain_id=domain_id,
+                                 password='pass')
+
     granted = cloud.grant_role("admin", user="demo", project="service")
 
-    flavor_tiny = cloud.create_flavor("m1.tiny", 512, 1, 1)
-    flavor_small = cloud.create_flavor("m1.small", 1024, 2, 2)
+    flavor_tiny = cloud.get_flavor("m1.tiny")
+    if not flavor_tiny:
+        flavor_tiny = cloud.create_flavor("m1.tiny", 512, 1, 1)
 
-    image = cloud.create_image(config.image_name,
-                               filename=config.image_filename,
-                               container_format="bare", disk_format="qcow2",
-                               wait=True, is_public=True)
+    flavor_small = cloud.get_flavor("m1.small")
+    if not flavor_small:
+        flavor_small = cloud.create_flavor("m1.small", 1024, 2, 2)
+
+    image = cloud.get_image(config.image_name)
+    if not image:
+        image = cloud.create_image(config.image_name,
+                                   filename=config.image_filename,
+                                   container_format="bare",
+                                   disk_format="qcow2",
+                                   wait=True, is_public=True)
 
     updated = cloud.update_image_properties(image=image,
                                             os_command_line='console=ttyAMA0',
@@ -30,37 +43,51 @@ def create_resources(config):
                                             hw_scsi_model='virtio-scsi',
                                             hw_firmware_type='uefi')
 
-    external_network = cloud.create_network("ext-net", external=True,
-                                            provider={
-                                                'physical_network': "external",
-                                                'network_type': "flat"})
+    external_network = cloud.get_network("ext-net")
+    if not external_network:
+        external_network = cloud.create_network("ext-net", external=True,
+                                                provider={
+                                                    'physical_network': "external",
+                                                    'network_type': "flat"
+                                                })
 
-    external_floating = cloud.create_subnet("ext-net",
-                                            subnet_name="ext-net-floating",
-                                            enable_dhcp=False,
-                                            allocation_pools=[{
-                                                "start": config.floating_range_start,
-                                                "end": config.floating_range_end,
-                                            }],
-                                            gateway_ip=config.floating_gateway_ip,
-                                            cidr=config.floating_cidr)
+    external_floating = cloud.get_subnet("ext-net-floating")
+    if not external_floating:
+        external_floating = cloud.create_subnet("ext-net",
+                                                subnet_name="ext-net-floating",
+                                                enable_dhcp=False,
+                                                allocation_pools=[{
+                                                    "start": config.floating_range_start,
+                                                    "end": config.floating_range_end,
+                                                }],
+                                                gateway_ip=config.floating_gateway_ip,
+                                                cidr=config.floating_cidr)
 
     # Create network for demo project
-    demo_network = cloud.create_network("demo-net", project_id=project_id,
-                                        provider={'network_type': "vxlan"})
-    demo_subnet = cloud.create_subnet(demo_network.id,
-                                      subnet_name="demo-subnet",
-                                      gateway_ip="192.168.1.1",
-                                      enable_dhcp=True,
-                                      cidr="192.168.1.0/24",
-                                      dns_nameservers=["8.8.8.8"])
+    demo_network = cloud.get_network("demo-net")
+    if not demo_network:
+        demo_network = cloud.create_network("demo-net",
+                                            project_id=project_id,
+                                            provider={'network_type': "vxlan"})
 
-    router = cloud.create_router(name="demo-router",
-                                 ext_gateway_net_id=cloud.get_network(
-                                     "ext-net").id)
-    interface = cloud.add_router_interface(router,
-                                           subnet_id=cloud.get_subnet(
-                                               "demo-subnet").id)
+    demo_subnet = cloud.get_subnet("demo-subnet")
+    if not demo_subnet:
+        demo_subnet = cloud.create_subnet(demo_network.id,
+                                          subnet_name="demo-subnet",
+                                          gateway_ip="192.168.1.1",
+                                          enable_dhcp=True,
+                                          cidr="192.168.1.0/24",
+                                          dns_nameservers=["8.8.8.8"])
+
+    router = cloud.get_router("demo-router")
+    if not router:
+        router = cloud.create_router(
+            name="demo-router",
+            ext_gateway_net_id=cloud.get_network(
+                "ext-net").id)
+        interface = cloud.add_router_interface(router,
+                                               subnet_id=cloud.get_subnet(
+                                                   "demo-subnet").id)
 
     security_group = cloud.get_security_group("default")
 
@@ -74,12 +101,14 @@ def create_resources(config):
                                                  port_range_min=22,
                                                  port_range_max=22)
 
-    keypair = cloud.create_keypair("demo-default",
-                                   config.public_key_file.read())
+    keypair = cloud.get_keypair("demo-default")
+    if not keypair:
+        keypair = cloud.create_keypair("demo-default",
+                                       config.public_key_file.read())
 
     # Create a instance
     server = cloud.create_server(
-        name="demo-test-instance",
+        name="demo-vm",
         image=image.id,
         wait=True,
         auto_ip=False,
