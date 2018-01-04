@@ -197,7 +197,6 @@ def main():
         if args.which == 'baremetal-config':
             bootstrap.configure()
         elif args.which == 'baremetal-provision':
-            print("foo")
             bootstrap.provision()
 
 if __name__ == "__main__":
