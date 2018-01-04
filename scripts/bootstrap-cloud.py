@@ -19,8 +19,8 @@ def create_resources(config):
     flavor_tiny = cloud.create_flavor("m1.tiny", 512, 1, 1)
     flavor_small = cloud.create_flavor("m1.small", 1024, 2, 2)
 
-    image = cloud.create_image("cirros-aarch64-v2",
-                               filename="../images/cirros.img",
+    image = cloud.create_image(config.image_name,
+                               filename=config.image_filename,
                                container_format="bare", disk_format="qcow2",
                                wait=True, is_public=True)
 
@@ -123,6 +123,10 @@ def parse_args():
                         required=True, type=argparse.FileType('r'))
     parser.add_argument('--cloud', '-c', dest='cloud',
                         required=True, type=str)
+    parser.add_argument('--image-filename', dest="image_filename",
+                        required=True)
+    parser.add_argument('--image-name', dest="image_name", required=True)
+
     return parser.parse_args()
 
 
