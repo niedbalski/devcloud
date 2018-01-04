@@ -1,0 +1,51 @@
+diff --git a/ansible/roles/ceph-bootstrap/tasks/configure_mon.yml b/ansible/roles/ceph-bootstrap/tasks/configure_mon.yml
+index 29dd549..9addc25 100644
+--- a/ansible/roles/ceph-bootstrap/tasks/configure_mon.yml
++++ b/ansible/roles/ceph-bootstrap/tasks/configure_mon.yml
+@@ -1,18 +1,14 @@
+ - name: Find pools defined
+   command: ceph osd pool ls
+   register: ceph_pools
+-  changed_when: true
+-
+-- name: Calculate PGs per pool
+-  set_fact:
+-    ceph_pgs_per_pool: "{{((groups['ceph_osd_servers'] | count * 100 / ceph_replication_count | int) / 3) | int}}"
+-  when: ceph_pools is defined
++  changed_when: false
+ 
+ - name: Create Pools for OpenStack
+-  when: (ceph_pgs_per_pool is defined and item not in ceph_pools.stdout_lines)
++  when: (ceph_pools is defined and item not in ceph_pools.stdout_lines)
+   shell: |
+     ceph osd pool delete {{item}} {{item}} --yes-i-really-really-mean-it
+-    ceph osd pool create {{item}} {{ceph_pgs_per_pool}} {{ceph_pgs_per_pool}}
++    ceph osd pool create {{item}} {{ceph_default_pg_num}} {{ceph_default_pg_num}}
++    ceph osd pool set {{item}} size {{ceph_replication_count}}
+   items:
+     - images
+     - vms
+diff --git a/ansible/roles/ceph/templates/ceph.conf b/ansible/roles/ceph/templates/ceph.conf
+index 554d1c2..2c565a5 100644
+--- a/ansible/roles/ceph/templates/ceph.conf
++++ b/ansible/roles/ceph/templates/ceph.conf
+@@ -15,6 +15,19 @@ public addr = {{ceph_public_addr}}
+ osd max object name len = 256
+ osd max object namespace len = 64
+ 
++# Placement groups directives
++
++osd pool default size = {{ceph_replication_count}}  # Write an object {{ceph_replication_count}} times.
++osd pool default min size = 2 # Allow writing two copies in a degraded state.
++
++# Default PG/PG num (100 * OSDs) / osd pool default size
++
++osd pool default pg num = {{ceph_default_pg_num}}
++osd pool default pgp num = {{ceph_default_pg_num}}
++
++mon pg warn min per osd = -1
++mon pg warn max per osd = -1
++
+ [client.images]
+ keyring = /etc/ceph/ceph.client.images.keyring
+ 
