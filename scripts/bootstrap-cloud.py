@@ -121,7 +121,8 @@ def parse_args():
                         required=True, type=str)
     parser.add_argument('--public-key-file', dest='public_key_file',
                         required=True, type=argparse.FileType('r'))
-
+    parser.add_argument('--cloud', '-c', dest='cloud',
+                        required=True, type=str)
     return parser.parse_args()
 
 
